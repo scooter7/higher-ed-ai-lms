@@ -5,7 +5,7 @@ import { Quiz } from "@/components/Quiz";
 const courseData: Record<string, { title: string; videoId: string; transcript: string }> = {
   "digital-marketing": {
     title: "Digital Marketing",
-    videoId: "dQw4w9WgXcQ", // Placeholder YouTube ID
+    videoId: "dQw4w9WgXcQ",
     transcript: "This is a sample transcript for Digital Marketing. AI can help automate campaigns, analyze data, and personalize student outreach.",
   },
   "brand-strategy": {
@@ -106,6 +106,16 @@ const quizQuestions: Record<string, { question: string; options: string[]; answe
       ],
       answer: 2,
     },
+    {
+      question: "How does AI help in understanding student preferences?",
+      options: [
+        "By analyzing large datasets",
+        "By ignoring data",
+        "By guessing",
+        "By manual surveys only",
+      ],
+      answer: 0,
+    },
   ],
   "web-development": [
     {
@@ -117,6 +127,16 @@ const quizQuestions: Record<string, { question: string; options: string[]; answe
         "Neither",
       ],
       answer: 2,
+    },
+    {
+      question: "Which is a benefit of using AI in web development?",
+      options: [
+        "Automated content suggestions",
+        "Slower website performance",
+        "Less accessibility",
+        "Manual coding only",
+      ],
+      answer: 0,
     },
   ],
   "social-media": [
@@ -130,6 +150,16 @@ const quizQuestions: Record<string, { question: string; options: string[]; answe
       ],
       answer: 2,
     },
+    {
+      question: "How does AI improve social media strategy?",
+      options: [
+        "By providing analytics",
+        "By ignoring trends",
+        "By posting randomly",
+        "By reducing engagement",
+      ],
+      answer: 0,
+    },
   ],
   "graphic-design": [
     {
@@ -139,6 +169,16 @@ const quizQuestions: Record<string, { question: string; options: string[]; answe
         "Slow down design",
         "Remove creativity",
         "None of the above",
+      ],
+      answer: 0,
+    },
+    {
+      question: "Which is a feature of AI graphic design tools?",
+      options: [
+        "Template generation",
+        "Manual sketching only",
+        "No automation",
+        "Slower output",
       ],
       answer: 0,
     },
@@ -154,6 +194,16 @@ const quizQuestions: Record<string, { question: string; options: string[]; answe
       ],
       answer: 2,
     },
+    {
+      question: "How can AI assist marketers in copywriting?",
+      options: [
+        "By suggesting headlines",
+        "By ignoring grammar",
+        "By making typos",
+        "By removing creativity",
+      ],
+      answer: 0,
+    },
   ],
   "email-marketing": [
     {
@@ -166,6 +216,16 @@ const quizQuestions: Record<string, { question: string; options: string[]; answe
       ],
       answer: 2,
     },
+    {
+      question: "What is a key advantage of AI in email marketing?",
+      options: [
+        "Better targeting",
+        "More spam",
+        "Less personalization",
+        "Manual sending only",
+      ],
+      answer: 0,
+    },
   ],
   "text-message-marketing": [
     {
@@ -177,6 +237,16 @@ const quizQuestions: Record<string, { question: string; options: string[]; answe
         "None",
       ],
       answer: 2,
+    },
+    {
+      question: "How does AI help with text message marketing?",
+      options: [
+        "By automating replies",
+        "By ignoring messages",
+        "By sending random texts",
+        "By reducing engagement",
+      ],
+      answer: 0,
     },
   ],
 };
