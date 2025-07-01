@@ -1,17 +1,24 @@
-// Update this page (the content is just a fallback if you fail to update the page)
-
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">
-          Start building your amazing project here!
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+      <div className="text-center max-w-xl">
+        <h1 className="text-4xl font-bold mb-4">AI for Higher Ed Marketing LMS</h1>
+        <p className="text-lg text-gray-700 mb-6">
+          Learn how to use AI to supercharge your marketing efforts in higher education. Explore courses on digital marketing, brand strategy, market research, and more—all with video-based lessons and interactive quizzes.
         </p>
+        <Link
+          to="/courses"
+          className="inline-block bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold shadow hover:bg-primary/90 transition"
+        >
+          View Courses
+        </Link>
       </div>
-      <MadeWithDyad />
+      <div className="mt-10">
+        <MadeWithDyad />
+      </div>
     </div>
   );
 };
