@@ -62,8 +62,123 @@ const quizQuestions: Record<string, { question: string; options: string[]; answe
       ],
       answer: 3,
     },
+    {
+      question: "What is one benefit of using AI in student outreach?",
+      options: [
+        "Personalization at scale",
+        "Manual data entry",
+        "Ignoring analytics",
+        "Reducing automation",
+      ],
+      answer: 0,
+    },
   ],
-  // Add more questions for other courses as needed
+  "brand-strategy": [
+    {
+      question: "How can AI assist with brand strategy?",
+      options: [
+        "Identify brand sentiment",
+        "Optimize messaging",
+        "Both of the above",
+        "None of the above",
+      ],
+      answer: 2,
+    },
+    {
+      question: "What is a key use of AI in branding?",
+      options: [
+        "Random guessing",
+        "Sentiment analysis",
+        "Ignoring feedback",
+        "Manual surveys",
+      ],
+      answer: 1,
+    },
+  ],
+  "market-research": [
+    {
+      question: "What can AI analyze for market research?",
+      options: [
+        "Trends",
+        "Student preferences",
+        "Both",
+        "Neither",
+      ],
+      answer: 2,
+    },
+  ],
+  "web-development": [
+    {
+      question: "How can AI help in web development for higher ed?",
+      options: [
+        "Improve accessibility",
+        "Content optimization",
+        "Both",
+        "Neither",
+      ],
+      answer: 2,
+    },
+  ],
+  "social-media": [
+    {
+      question: "What can AI do for social media marketing?",
+      options: [
+        "Schedule posts",
+        "Analyze engagement",
+        "Both",
+        "None",
+      ],
+      answer: 2,
+    },
+  ],
+  "graphic-design": [
+    {
+      question: "How does AI help in graphic design?",
+      options: [
+        "Generate creative assets quickly",
+        "Slow down design",
+        "Remove creativity",
+        "None of the above",
+      ],
+      answer: 0,
+    },
+  ],
+  "copywriting": [
+    {
+      question: "What is a benefit of AI in copywriting?",
+      options: [
+        "Brainstorming ideas",
+        "Refining messaging",
+        "Both",
+        "None",
+      ],
+      answer: 2,
+    },
+  ],
+  "email-marketing": [
+    {
+      question: "How can AI improve email marketing?",
+      options: [
+        "Personalize content",
+        "Optimize send times",
+        "Both",
+        "Neither",
+      ],
+      answer: 2,
+    },
+  ],
+  "text-message-marketing": [
+    {
+      question: "What can AI do for SMS marketing?",
+      options: [
+        "Segment audiences",
+        "Automate responses",
+        "Both",
+        "None",
+      ],
+      answer: 2,
+    },
+  ],
 };
 
 const CourseDetail = () => {
