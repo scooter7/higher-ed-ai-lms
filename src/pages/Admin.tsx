@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-const ADMIN_EMAIL = "admin@example.com"; // Change this to your admin email
+const ADMIN_EMAIL = "james@shmooze.io"; // Updated admin email
 
 type VideoResult = {
   id: string;
