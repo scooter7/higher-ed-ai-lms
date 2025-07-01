@@ -26,6 +26,11 @@ export const Quiz: React.FC<QuizProps> = ({ questions }) => {
     setSubmitted(true);
   };
 
+  const handleRetake = () => {
+    setSelected(questions.map(() => null));
+    setSubmitted(false);
+  };
+
   const correctCount = selected.filter(
     (sel, idx) => sel === questions[idx].answer
   ).length;
@@ -92,8 +97,13 @@ export const Quiz: React.FC<QuizProps> = ({ questions }) => {
           Submit Quiz
         </Button>
       ) : (
-        <div className="text-center mt-4 text-lg font-semibold">
-          You got {correctCount} out of {questions.length} correct!
+        <div className="flex flex-col items-center gap-3 mt-4">
+          <div className="text-lg font-semibold">
+            You got {correctCount} out of {questions.length} correct!
+          </div>
+          <Button type="button" variant="outline" onClick={handleRetake}>
+            Retake Quiz
+          </Button>
         </div>
       )}
     </form>
