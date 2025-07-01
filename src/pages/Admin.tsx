@@ -13,21 +13,6 @@ type VideoResult = {
   thumbnail: string;
 };
 
-const mockVideos: VideoResult[] = [
-  {
-    id: "dQw4w9WgXcQ",
-    title: "Sample Video 1",
-    description: "A sample video for demonstration.",
-    thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/0.jpg",
-  },
-  {
-    id: "9bZkp7q19f0",
-    title: "Sample Video 2",
-    description: "Another sample video.",
-    thumbnail: "https://img.youtube.com/vi/9bZkp7q19f0/0.jpg",
-  },
-];
-
 const Admin = () => {
   const { user } = useUser();
   const [search, setSearch] = useState("");
@@ -40,6 +25,8 @@ const Admin = () => {
     videosWatched: 0,
     quizzesTaken: 0,
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Restrict access to admin
   if (!user || user.email !== ADMIN_EMAIL) {
@@ -57,14 +44,34 @@ const Admin = () => {
     );
   }
 
-  // Placeholder: Simulate video search
-  const handleSearch = (e: React.FormEvent) => {
+  // Real YouTube video search using edge function
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    setResults(
-      mockVideos.filter((v) =>
-        v.title.toLowerCase().includes(search.toLowerCase())
-      )
-    );
+    setLoading(true);
+    setError(null);
+    setResults([]);
+    setSelected(null);
+    setTranscript("");
+    setQuiz([]);
+    try {
+      const res = await fetch(
+        "https://omviqylasysbpoiosapy.supabase.co/functions/v1/youtube-search",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: search }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to search videos.");
+      } else {
+        setResults(data.results || []);
+      }
+    } catch (err) {
+      setError("Network error.");
+    }
+    setLoading(false);
   };
 
   // Placeholder: Simulate transcript fetch
@@ -122,9 +129,15 @@ const Admin = () => {
             placeholder="Search YouTube videos..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            disabled={loading}
           />
-          <Button type="submit">Search</Button>
+          <Button type="submit" disabled={loading || !search.trim()}>
+            {loading ? "Searching..." : "Search"}
+          </Button>
         </form>
+        {error && (
+          <div className="text-red-600 mb-2 text-center">{error}</div>
+        )}
         <div className="grid gap-4">
           {results.map((video) => (
             <div
