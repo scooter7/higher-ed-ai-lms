@@ -58,7 +58,10 @@ const Admin = () => {
         "https://omviqylasysbpoiosapy.supabase.co/functions/v1/youtube-search",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tdmlxeWxhc3lzYnBvaW9zYXB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEzOTQ5NzgsImV4cCI6MjA2Njk3MDk3OH0.Puk5I9c6eOuzSfe24gDAO3hx1l7WtxZ8Tnwyd_KHkqk"
+          },
           body: JSON.stringify({ query: search }),
         }
       );
