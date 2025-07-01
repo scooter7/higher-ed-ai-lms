@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useMemo } from "react";
+import { Quiz } from "@/components/Quiz";
 
 const courseData: Record<string, { title: string; videoId: string; transcript: string }> = {
   "digital-marketing": {
@@ -99,26 +100,7 @@ const CourseDetail = () => {
         {questions.length === 0 ? (
           <p className="text-gray-500">Quiz coming soon!</p>
         ) : (
-          <ul className="space-y-6">
-            {questions.map((q, idx) => (
-              <li key={idx} className="bg-white p-4 rounded shadow border">
-                <div className="font-medium mb-2">{q.question}</div>
-                <ul>
-                  {q.options.map((opt, i) => (
-                    <li key={i}>
-                      <label className="flex items-center space-x-2">
-                        <input type="radio" name={`q${idx}`} disabled />
-                        <span>{opt}</span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-2 text-xs text-green-600">
-                  Correct answer: {q.options[q.answer]}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <Quiz questions={questions} />
         )}
       </div>
       <div className="mt-8 text-center">
