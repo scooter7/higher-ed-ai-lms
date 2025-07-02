@@ -27,11 +27,8 @@ serve(async (req) => {
     });
   }
 
-  // Query auth.users for id and email
-  const { data, error } = await supabase
-    .from("users")
-    .select("id, email");
-
+  // Use the admin API to list all users
+  const { data, error } = await supabase.auth.admin.listUsers();
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
@@ -39,7 +36,13 @@ serve(async (req) => {
     });
   }
 
-  return new Response(JSON.stringify({ users: data }), {
+  // Map to id and email only
+  const users = (data?.users || []).map((u: any) => ({
+    id: u.id,
+    email: u.email,
+  }));
+
+  return new Response(JSON.stringify({ users }), {
     status: 200,
     headers: corsHeaders,
   });
