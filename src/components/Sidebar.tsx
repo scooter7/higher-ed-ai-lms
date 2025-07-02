@@ -1,14 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, History, FileText, Image, User } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import Logo from "./Logo";
 
 const navItems = [
   { label: "Dashboard", icon: <LayoutDashboard size={20} />, to: "/" },
-  { label: "History", icon: <History size={20} />, to: "/history" },
-  { label: "Brand Materials", icon: <FileText size={20} />, to: "/brand-materials" },
-  { label: "Image Library", icon: <Image size={20} />, to: "/image-library" },
-  { label: "My Profile", icon: <User size={20} />, to: "/profile" },
 ];
 
 const Sidebar = () => {
