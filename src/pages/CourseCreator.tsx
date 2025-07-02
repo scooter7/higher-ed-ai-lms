@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 
-// --- Add missing constants and types ---
 const ADMIN_EMAIL = "james@shmooze.io";
 
 const CATEGORY_OPTIONS = [
@@ -49,7 +48,6 @@ type Media = {
   created_at: string;
 };
 
-// --- Helper to extract YouTube ID from URL ---
 function getYoutubeId(url: string) {
   const match = url.match(
     /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^?&]+)/
@@ -166,7 +164,137 @@ const CourseCreator: React.FC = () => {
     }
   };
 
-  // --- UI ---
+  // Quiz handlers
+  const handleAddQuestion = () => {
+    setQuestions([
+      ...questions,
+      { question: "", options: ["", "", "", ""], answer: 0 },
+    ]);
+  };
+
+  const handleQuestionChange = (idx: number, value: string) => {
+    setQuestions((prev) =>
+      prev.map((q, i) =>
+        i === idx ? { ...q, question: value } : q
+      )
+    );
+  };
+
+  const handleOptionChange = (qIdx: number, optIdx: number, value: string) => {
+    setQuestions((prev) =>
+      prev.map((q, i) =>
+        i === qIdx
+          ? {
+              ...q,
+              options: q.options.map((opt, oi) =>
+                oi === optIdx ? value : opt
+              ),
+            }
+          : q
+      )
+    );
+  };
+
+  const handleAnswerChange = (qIdx: number, ansIdx: number) => {
+    setQuestions((prev) =>
+      prev.map((q, i) =>
+        i === qIdx ? { ...q, answer: ansIdx } : q
+      )
+    );
+  };
+
+  const handleRemoveQuestion = (idx: number) => {
+    setQuestions((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSaveQuiz = async () => {
+    if (!quizTitle || !videoUrl || categories.length === 0 || questions.length === 0) {
+      toast.error("Please fill in all quiz fields.");
+      return;
+    }
+    setSaving(true);
+    const quizPayload = {
+      title: quizTitle,
+      video_url: videoUrl,
+      categories,
+      questions: questions.map((q) => ({
+        text: q.question,
+        options: q.options.map((opt) => ({ text: opt })),
+        correct: q.answer,
+      })),
+      created_by: user.id,
+    };
+    let result;
+    if (editingId) {
+      result = await supabase
+        .from("quizzes")
+        .update(quizPayload)
+        .eq("id", editingId);
+    } else {
+      result = await supabase.from("quizzes").insert([quizPayload]);
+    }
+    if (!result.error) {
+      toast.success("Quiz saved!");
+      setQuizTitle("");
+      setVideoUrl("");
+      setCategories([]);
+      setQuestions([]);
+      setEditingId(null);
+      setSaving(false);
+      // Refresh quiz list
+      const { data, error } = await supabase
+        .from("quizzes")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!error && data) {
+        setQuizzes(data);
+      }
+    } else {
+      toast.error("Failed to save quiz.");
+      setSaving(false);
+    }
+  };
+
+  const handleEditQuiz = (quiz: Quiz) => {
+    setQuizTitle(quiz.title);
+    setVideoUrl(quiz.video_url);
+    setCategories(quiz.categories);
+    setQuestions(
+      quiz.questions.map((q) => ({
+        question: q.text,
+        options: q.options.map((opt) => opt.text),
+        answer: q.correct ?? 0,
+      }))
+    );
+    setEditingId(quiz.id);
+  };
+
+  const handleDeleteQuiz = async (id: string) => {
+    if (!window.confirm("Delete this quiz?")) return;
+    setSaving(true);
+    const { error } = await supabase.from("quizzes").delete().eq("id", id);
+    if (!error) {
+      toast.success("Quiz deleted.");
+      setQuizTitle("");
+      setVideoUrl("");
+      setCategories([]);
+      setQuestions([]);
+      setEditingId(null);
+      setSaving(false);
+      // Refresh quiz list
+      const { data, error: fetchError } = await supabase
+        .from("quizzes")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!fetchError && data) {
+        setQuizzes(data);
+      }
+    } else {
+      toast.error("Failed to delete quiz.");
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto py-10">
       <h1 className="text-3xl font-bold mb-6 text-center">
@@ -257,8 +385,145 @@ const CourseCreator: React.FC = () => {
           )}
         </div>
       </Card>
-      {/* --- Quiz Management Section (existing) --- */}
-      {/* ... rest of the file unchanged ... */}
+      {/* --- Quiz Management Section --- */}
+      <Card className="p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">{editingId ? "Edit Quiz" : "Create New Quiz"}</h2>
+        <div className="mb-4">
+          <label className="block font-medium mb-1">Quiz Title</label>
+          <Input
+            value={quizTitle}
+            onChange={e => setQuizTitle(e.target.value)}
+            placeholder="Enter quiz title"
+            disabled={saving}
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block font-medium mb-1">Quiz Video URL</label>
+          <Input
+            value={videoUrl}
+            onChange={e => setVideoUrl(e.target.value)}
+            placeholder="Paste YouTube video URL"
+            disabled={saving}
+          />
+          {videoUrl && (
+            <div className="aspect-w-16 aspect-h-9 mt-2">
+              <iframe
+                src={`https://www.youtube.com/embed/${getYoutubeId(videoUrl)}`}
+                title="Quiz Video"
+                allowFullScreen
+                className="w-full h-48 rounded border"
+              />
+            </div>
+          )}
+        </div>
+        <div className="mb-4">
+          <label className="block font-medium mb-1">Categories</label>
+          <select
+            multiple
+            className="w-full border rounded px-2 py-1"
+            value={categories}
+            onChange={e =>
+              setCategories(Array.from(e.target.selectedOptions, (opt) => opt.value))
+            }
+            disabled={saving}
+          >
+            {CATEGORY_OPTIONS.map((cat) => (
+              <option key={cat.value} value={cat.value}>
+                {cat.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="mb-4">
+          <label className="block font-medium mb-2">Questions</label>
+          {questions.map((q, qIdx) => (
+            <Card key={qIdx} className="p-3 mb-2">
+              <div className="mb-2 flex items-center">
+                <Input
+                  value={q.question}
+                  onChange={e => handleQuestionChange(qIdx, e.target.value)}
+                  placeholder={`Question ${qIdx + 1}`}
+                  className="flex-1"
+                  disabled={saving}
+                />
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="ml-2"
+                  onClick={() => handleRemoveQuestion(qIdx)}
+                  disabled={saving}
+                >
+                  Remove
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {q.options.map((opt, optIdx) => (
+                  <div key={optIdx} className="flex items-center">
+                    <input
+                      type="radio"
+                      name={`answer-${qIdx}`}
+                      checked={q.answer === optIdx}
+                      onChange={() => handleAnswerChange(qIdx, optIdx)}
+                      disabled={saving}
+                      className="mr-2"
+                    />
+                    <Input
+                      value={opt}
+                      onChange={e => handleOptionChange(qIdx, optIdx, e.target.value)}
+                      placeholder={`Option ${optIdx + 1}`}
+                      disabled={saving}
+                    />
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleAddQuestion}
+            disabled={saving}
+          >
+            Add Question
+          </Button>
+        </div>
+        <Button onClick={handleSaveQuiz} disabled={saving}>
+          {saving ? "Saving..." : editingId ? "Update Quiz" : "Create Quiz"}
+        </Button>
+      </Card>
+      {/* --- Quiz List Section --- */}
+      <Card className="p-6">
+        <h2 className="text-xl font-semibold mb-4">All Quizzes</h2>
+        {loadingQuizzes ? (
+          <div className="text-gray-500">Loading quizzes...</div>
+        ) : quizzes.length === 0 ? (
+          <div className="text-gray-500">No quizzes found.</div>
+        ) : (
+          <div className="space-y-2">
+            {quizzes.map((quiz) => (
+              <Card key={quiz.id} className="p-3 flex items-center justify-between">
+                <div>
+                  <div className="font-medium">{quiz.title}</div>
+                  <div className="text-xs text-gray-500">
+                    {quiz.categories.map((cat) => CATEGORY_OPTIONS.find((c) => c.value === cat)?.label || cat).join(", ")}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {quiz.video_url}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => handleEditQuiz(quiz)}>
+                    Edit
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleDeleteQuiz(quiz.id)}>
+                    Delete
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 };
