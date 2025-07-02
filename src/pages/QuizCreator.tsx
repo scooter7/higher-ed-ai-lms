@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useUser } from "@/contexts/UserContext";
 
 type Option = { text: string };
 type Question = {
@@ -10,6 +11,8 @@ type Question = {
   options: Option[];
   correct: number | null;
 };
+
+const ADMIN_EMAIL = "james@shmooze.io";
 
 const getYoutubeId = (url: string) => {
   // Extracts the video ID from a YouTube URL
@@ -20,10 +23,26 @@ const getYoutubeId = (url: string) => {
 };
 
 const QuizCreator: React.FC = () => {
+  const { user } = useUser();
   const [videoUrl, setVideoUrl] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [quizTitle, setQuizTitle] = useState("");
   const [saving, setSaving] = useState(false);
+
+  if (!user || user.email !== ADMIN_EMAIL) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="p-8">
+          <div className="text-xl font-semibold text-center">
+            Access Denied
+          </div>
+          <div className="text-gray-500 mt-2 text-center">
+            You do not have permission to view this page.
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   const handleAddQuestion = () => {
     setQuestions([
