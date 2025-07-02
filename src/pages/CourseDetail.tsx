@@ -148,6 +148,7 @@ const CourseDetail = () => {
                   options: q.options.map((opt) => opt.text),
                   answer: q.correct ?? 0,
                 }))}
+                courseId={courseId}
               />
             </Card>
           ))

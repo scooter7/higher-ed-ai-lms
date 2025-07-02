@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useUser } from "@/contexts/UserContext";
+import { supabase } from "@/lib/supabaseClient";
+import { toast } from "sonner";
 
 type Question = {
   question: string;
@@ -10,12 +13,16 @@ type Question = {
 
 type QuizProps = {
   questions: Question[];
+  courseId?: string; // Add courseId to associate with quiz_scores
 };
 
-export const Quiz: React.FC<QuizProps> = ({ questions }) => {
+export const Quiz: React.FC<QuizProps> = ({ questions, courseId }) => {
   const [selected, setSelected] = useState<(number | null)[]>(questions.map(() => null));
   const [submitted, setSubmitted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const firstInputRef = useRef<HTMLInputElement | null>(null);
+  const { user } = useUser();
 
   useEffect(() => {
     if (!submitted && firstInputRef.current) {
@@ -29,22 +36,44 @@ export const Quiz: React.FC<QuizProps> = ({ questions }) => {
     }
   };
 
-  const handleSubmit = () => {
+  const correctCount = selected.filter(
+    (sel, idx) => sel === questions[idx].answer
+  ).length;
+
+  const handleSubmit = async () => {
     setSubmitted(true);
+
+    // Save quiz attempt to Supabase if user and courseId are present
+    if (user && courseId && !saved) {
+      setSaving(true);
+      const { error } = await supabase.from("quiz_scores").insert([
+        {
+          user_id: user.id,
+          course_id: courseId,
+          score: correctCount,
+          total: questions.length,
+          // taken_at will default to now()
+        },
+      ]);
+      setSaving(false);
+      if (!error) {
+        setSaved(true);
+        toast.success("Quiz attempt saved!");
+      } else {
+        toast.error("Failed to save quiz attempt.");
+      }
+    }
   };
 
   const handleRetake = () => {
     setSelected(questions.map(() => null));
     setSubmitted(false);
+    setSaved(false);
   };
-
-  const correctCount = selected.filter(
-    (sel, idx) => sel === questions[idx].answer
-  ).length;
 
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={e => {
         e.preventDefault();
         handleSubmit();
       }}
@@ -106,7 +135,7 @@ export const Quiz: React.FC<QuizProps> = ({ questions }) => {
         </Card>
       ))}
       {!submitted ? (
-        <Button type="submit" className="mt-2">
+        <Button type="submit" className="mt-2" disabled={saving}>
           Submit Quiz
         </Button>
       ) : (
@@ -114,6 +143,15 @@ export const Quiz: React.FC<QuizProps> = ({ questions }) => {
           <div className="text-lg font-semibold" aria-live="polite">
             You got {correctCount} out of {questions.length} correct!
           </div>
+          {user && courseId && (
+            <div className="text-sm text-gray-600">
+              {saving
+                ? "Saving your attempt..."
+                : saved
+                ? "Your attempt has been saved."
+                : ""}
+            </div>
+          )}
           <Button type="button" variant="outline" onClick={handleRetake}>
             Retake Quiz
           </Button>
