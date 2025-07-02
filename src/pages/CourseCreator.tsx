@@ -6,7 +6,56 @@ import { toast } from "sonner";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 
-// ... (rest of the code above unchanged)
+// --- Add missing constants and types ---
+const ADMIN_EMAIL = "james@shmooze.io";
+
+const CATEGORY_OPTIONS = [
+  { value: "digital-marketing", label: "Digital Marketing" },
+  { value: "brand-strategy", label: "Brand Strategy" },
+  { value: "market-research", label: "Market Research" },
+  { value: "web-development", label: "Web Development" },
+  { value: "social-media", label: "Social Media" },
+  { value: "graphic-design", label: "Graphic Design" },
+  { value: "copywriting", label: "Copywriting" },
+  { value: "email-marketing", label: "Email Marketing" },
+  { value: "text-message-marketing", label: "Text Message Marketing" },
+];
+
+type Question = {
+  question: string;
+  options: string[];
+  answer: number;
+};
+
+type Quiz = {
+  id: string;
+  title: string;
+  video_url: string;
+  categories: string[];
+  questions: {
+    text: string;
+    options: { text: string }[];
+    correct: number | null;
+  }[];
+  created_at?: string;
+};
+
+type Media = {
+  id: string;
+  course_id: string;
+  type: "video" | "reading" | "podcast";
+  title: string;
+  url: string;
+  created_at: string;
+};
+
+// --- Helper to extract YouTube ID from URL ---
+function getYoutubeId(url: string) {
+  const match = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^?&]+)/
+  );
+  return match ? match[1] : "";
+}
 
 const CourseCreator: React.FC = () => {
   const { user } = useUser();
@@ -78,8 +127,6 @@ const CourseCreator: React.FC = () => {
     );
   }
 
-  // ... (quiz form handlers unchanged)
-
   // Media handlers
   const handleAddMedia = async () => {
     if (!mediaCourse || !mediaType || !mediaTitle || !mediaUrl) {
@@ -119,8 +166,7 @@ const CourseCreator: React.FC = () => {
     }
   };
 
-  const videoId = getYoutubeId(videoUrl);
-
+  // --- UI ---
   return (
     <div className="max-w-3xl mx-auto py-10">
       <h1 className="text-3xl font-bold mb-6 text-center">
