@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useMemo, useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Quiz } from "@/components/Quiz";
 import { supabase } from "@/lib/supabaseClient";
 import { Card } from "@/components/ui/card";
@@ -8,69 +8,7 @@ import { useUser } from "@/contexts/UserContext";
 import { useActivityProgress } from "@/hooks/useActivityProgress";
 import { toast } from "sonner";
 
-// Static course data
-const courseData: Record<string, {
-  title: string;
-  videoId: string;
-  transcript: string;
-  category: string;
-}> = {
-  "digital-marketing": {
-    title: "Digital Marketing",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is the transcript for Digital Marketing. Replace with real content.",
-    category: "digital-marketing",
-  },
-  "brand-strategy": {
-    title: "Brand Strategy",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is the transcript for Brand Strategy. Replace with real content.",
-    category: "brand-strategy",
-  },
-  "market-research": {
-    title: "Market Research",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is the transcript for Market Research. Replace with real content.",
-    category: "market-research",
-  },
-  "web-development": {
-    title: "Web Development",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is the transcript for Web Development. Replace with real content.",
-    category: "web-development",
-  },
-  "social-media": {
-    title: "Social Media",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is the transcript for Social Media. Replace with real content.",
-    category: "social-media",
-  },
-  "graphic-design": {
-    title: "Graphic Design",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is the transcript for Graphic Design. Replace with real content.",
-    category: "graphic-design",
-  },
-  "copywriting": {
-    title: "Copywriting",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is the transcript for Copywriting. Replace with real content.",
-    category: "copywriting",
-  },
-  "email-marketing": {
-    title: "Email Marketing",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is the transcript for Email Marketing. Replace with real content.",
-    category: "email-marketing",
-  },
-  "text-message-marketing": {
-    title: "Text Message Marketing",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is the transcript for Text Message Marketing. Replace with real content.",
-    category: "text-message-marketing",
-  },
-};
-
+// Types
 type QuizType = {
   id: string;
   title: string;
@@ -90,11 +28,11 @@ type Media = {
   title: string;
   url: string;
   created_at: string;
+  transcript?: string;
 };
 
 const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
-  const course = useMemo(() => courseId && courseData[courseId], [courseId]);
   const [quizzes, setQuizzes] = useState<QuizType[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -108,14 +46,15 @@ const CourseDetail = () => {
   // For auto-marking course complete
   const [courseCompleted, setCourseCompleted] = useState(false);
 
+  // Fetch quizzes for this course
   useEffect(() => {
     const fetchQuizzes = async () => {
-      if (!course) return;
+      if (!courseId) return;
       setLoading(true);
       const { data, error } = await supabase
         .from("quizzes")
         .select("*")
-        .contains("categories", [course.category]);
+        .contains("categories", [courseId]);
       if (!error && data) {
         setQuizzes(data);
       } else {
@@ -124,8 +63,9 @@ const CourseDetail = () => {
       setLoading(false);
     };
     fetchQuizzes();
-  }, [course]);
+  }, [courseId]);
 
+  // Fetch all media for this course
   useEffect(() => {
     const fetchMedia = async () => {
       if (!courseId) return;
@@ -193,35 +133,25 @@ const CourseDetail = () => {
       });
   }, [user, courseId]);
 
-  if (!course) {
-    return (
-      <div className="max-w-xl mx-auto py-10 text-center">
-        <h2 className="text-2xl font-bold mb-4">Course Not Found</h2>
-        <a href="/courses" className="text-blue-500 underline">Back to Courses</a>
-      </div>
-    );
-  }
+  // Get course title from media or quizzes, fallback to courseId
+  const courseTitle =
+    media[0]?.course_id
+      ? getCourseLabel(media[0].course_id)
+      : quizzes[0]?.categories[0]
+      ? getCourseLabel(quizzes[0].categories[0])
+      : courseId || "Course";
 
   // Group media by type
   const videos = media.filter((m) => m.type === "video");
   const readings = media.filter((m) => m.type === "reading");
   const podcasts = media.filter((m) => m.type === "podcast");
 
+  // Find transcript if any media has it
+  const transcript = media.find((m) => m.transcript)?.transcript;
+
   return (
     <div className="max-w-2xl mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-6">{course.title}</h1>
-      <div className="mb-6">
-        <div className="aspect-w-16 aspect-h-9 mb-4">
-          <iframe
-            src={`https://www.youtube.com/embed/${course.videoId}`}
-            title={course.title}
-            allowFullScreen
-            className="w-full h-64 rounded-lg border"
-          />
-        </div>
-        <h2 className="text-xl font-semibold mb-2">Transcript</h2>
-        <p className="bg-gray-50 p-4 rounded border text-gray-700">{course.transcript}</p>
-      </div>
+      <h1 className="text-3xl font-bold mb-6">{courseTitle}</h1>
       {/* --- Course Completion Status --- */}
       <div className="my-4 text-center">
         {courseCompleted ? (
@@ -342,13 +272,20 @@ const CourseDetail = () => {
           </div>
         )}
       </div>
+      {/* --- Transcript Section (only if available) --- */}
+      {transcript && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-2">Transcript</h2>
+          <p className="bg-gray-50 p-4 rounded border text-gray-700">{transcript}</p>
+        </div>
+      )}
       {/* --- Quizzes Section --- */}
       <div>
         <h2 className="text-xl font-semibold mb-2">Quizzes</h2>
         {loading ? (
           <div className="text-gray-500">Loading quizzes...</div>
         ) : quizzes.length === 0 ? (
-          <p className="text-gray-500">No quizzes available for this category yet.</p>
+          <p className="text-gray-500">No quizzes available for this course yet.</p>
         ) : (
           quizzes.map((quiz) => {
             const key = `quiz:${quiz.id}`;
@@ -393,7 +330,7 @@ const CourseDetail = () => {
       </div>
     </div>
   );
-}
+};
 
 // Helper to extract YouTube ID from URL
 function getYoutubeId(url: string) {
@@ -401,6 +338,22 @@ function getYoutubeId(url: string) {
     /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^?&]+)/
   );
   return match ? match[1] : "";
+}
+
+// Helper to get course label from id
+function getCourseLabel(id: string) {
+  const map: Record<string, string> = {
+    "digital-marketing": "Digital Marketing",
+    "brand-strategy": "Brand Strategy",
+    "market-research": "Market Research",
+    "web-development": "Web Development",
+    "social-media": "Social Media",
+    "graphic-design": "Graphic Design",
+    "copywriting": "Copywriting",
+    "email-marketing": "Email Marketing",
+    "text-message-marketing": "Text Message Marketing",
+  };
+  return map[id] || id;
 }
 
 export default CourseDetail;
