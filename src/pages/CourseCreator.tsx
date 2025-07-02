@@ -52,7 +52,7 @@ const getYoutubeId = (url: string) => {
   return match ? match[1] : "";
 };
 
-const QuizCreator: React.FC = () => {
+const CourseCreator: React.FC = () => {
   const { user } = useUser();
   const [videoUrl, setVideoUrl] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -303,7 +303,7 @@ const QuizCreator: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto py-10">
       <h1 className="text-3xl font-bold mb-6 text-center">
-        {editingId ? "Edit Quiz" : "Quiz Creator"}
+        {editingId ? "Edit Course" : "Course Creator"}
       </h1>
       {/* --- Media Management Section --- */}
       <Card className="p-6 mb-8">
@@ -672,4 +672,4 @@ const QuizCreator: React.FC = () => {
   );
 };
 
-export default QuizCreator;
+export default CourseCreator;
