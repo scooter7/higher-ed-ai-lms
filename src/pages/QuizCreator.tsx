@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useUser } from "@/contexts/UserContext";
+import { supabase } from "@/lib/supabaseClient";
 
 type Option = { text: string };
 type Question = {
@@ -12,10 +13,30 @@ type Question = {
   correct: number | null;
 };
 
+type Quiz = {
+  id: string;
+  title: string;
+  video_url: string;
+  categories: string[];
+  questions: Question[];
+  created_at: string;
+};
+
 const ADMIN_EMAIL = "james@shmooze.io";
 
+const CATEGORY_OPTIONS = [
+  { value: "digital-marketing", label: "Digital Marketing" },
+  { value: "brand-strategy", label: "Brand Strategy" },
+  { value: "market-research", label: "Market Research" },
+  { value: "web-development", label: "Web Development" },
+  { value: "social-media", label: "Social Media" },
+  { value: "graphic-design", label: "Graphic Design" },
+  { value: "copywriting", label: "Copywriting" },
+  { value: "email-marketing", label: "Email Marketing" },
+  { value: "text-message-marketing", label: "Text Message Marketing" },
+];
+
 const getYoutubeId = (url: string) => {
-  // Extracts the video ID from a YouTube URL
   const match = url.match(
     /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^?&]+)/,
   );
@@ -27,7 +48,29 @@ const QuizCreator: React.FC = () => {
   const [videoUrl, setVideoUrl] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [quizTitle, setQuizTitle] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Quiz list state
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [loadingQuizzes, setLoadingQuizzes] = useState(true);
+
+  // Fetch quizzes created by admin
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      setLoadingQuizzes(true);
+      const { data, error } = await supabase
+        .from("quizzes")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!error && data) {
+        setQuizzes(data);
+      }
+      setLoadingQuizzes(false);
+    };
+    fetchQuizzes();
+  }, [saving]);
 
   if (!user || user.email !== ADMIN_EMAIL) {
     return (
@@ -44,6 +87,7 @@ const QuizCreator: React.FC = () => {
     );
   }
 
+  // Form handlers
   const handleAddQuestion = () => {
     setQuestions([
       ...questions,
@@ -115,24 +159,76 @@ const QuizCreator: React.FC = () => {
     );
   };
 
-  const handleSave = () => {
+  const resetForm = () => {
+    setQuizTitle("");
+    setVideoUrl("");
+    setCategories([]);
+    setQuestions([]);
+    setEditingId(null);
+  };
+
+  const handleSave = async () => {
     setSaving(true);
-    // For now, just log the quiz data and show a toast
     const quizData = {
       title: quizTitle,
-      videoUrl,
+      video_url: videoUrl,
+      categories,
       questions,
+      created_by: user.id,
     };
-    console.log("Quiz saved:", quizData);
-    toast.success("Quiz saved! (Check console for data)");
+    if (editingId) {
+      // Update existing quiz
+      const { error } = await supabase
+        .from("quizzes")
+        .update(quizData)
+        .eq("id", editingId);
+      if (!error) {
+        toast.success("Quiz updated!");
+        resetForm();
+      } else {
+        toast.error("Failed to update quiz.");
+      }
+    } else {
+      // Insert new quiz
+      const { error } = await supabase.from("quizzes").insert([quizData]);
+      if (!error) {
+        toast.success("Quiz saved!");
+        resetForm();
+      } else {
+        toast.error("Failed to save quiz.");
+      }
+    }
     setSaving(false);
+  };
+
+  const handleEdit = (quiz: Quiz) => {
+    setQuizTitle(quiz.title);
+    setVideoUrl(quiz.video_url);
+    setCategories(quiz.categories);
+    setQuestions(quiz.questions);
+    setEditingId(quiz.id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this quiz?")) return;
+    const { error } = await supabase.from("quizzes").delete().eq("id", id);
+    if (!error) {
+      toast.success("Quiz deleted.");
+      setQuizzes((prev) => prev.filter((q) => q.id !== id));
+      if (editingId === id) resetForm();
+    } else {
+      toast.error("Failed to delete quiz.");
+    }
   };
 
   const videoId = getYoutubeId(videoUrl);
 
   return (
     <div className="max-w-3xl mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-6 text-center">Quiz Creator</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        {editingId ? "Edit Quiz" : "Quiz Creator"}
+      </h1>
       <Card className="p-6 mb-8">
         <div className="mb-4">
           <label className="block font-medium mb-1">Quiz Title</label>
@@ -162,6 +258,35 @@ const QuizCreator: React.FC = () => {
             </div>
           </div>
         )}
+        <div className="mb-4">
+          <label className="block font-medium mb-1">Categories</label>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORY_OPTIONS.map((cat) => (
+              <label
+                key={cat.value}
+                className={`flex items-center gap-1 px-2 py-1 rounded cursor-pointer border ${
+                  categories.includes(cat.value)
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-gray-100 border-gray-300"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={categories.includes(cat.value)}
+                  onChange={() => {
+                    setCategories((prev) =>
+                      prev.includes(cat.value)
+                        ? prev.filter((c) => c !== cat.value)
+                        : [...prev, cat.value],
+                    );
+                  }}
+                  className="accent-primary"
+                />
+                {cat.label}
+              </label>
+            ))}
+          </div>
+        </div>
         <div>
           <h2 className="text-xl font-semibold mb-2">Questions</h2>
           {questions.length === 0 && (
@@ -247,20 +372,54 @@ const QuizCreator: React.FC = () => {
             Add Question
           </Button>
         </div>
-        <div className="mt-8 flex justify-end">
+        <div className="mt-8 flex gap-2 justify-end">
+          {editingId && (
+            <Button
+              variant="outline"
+              onClick={resetForm}
+              disabled={saving}
+              type="button"
+            >
+              Cancel
+            </Button>
+          )}
           <Button
             onClick={handleSave}
-            disabled={saving || !quizTitle || !videoId || questions.length === 0}
+            disabled={
+              saving ||
+              !quizTitle ||
+              !videoId ||
+              questions.length === 0 ||
+              categories.length === 0
+            }
           >
-            {saving ? "Saving..." : "Save Quiz"}
+            {saving
+              ? editingId
+                ? "Saving..."
+                : "Saving..."
+              : editingId
+              ? "Update Quiz"
+              : "Save Quiz"}
           </Button>
         </div>
       </Card>
       {/* Live Preview */}
-      <Card className="p-6">
+      <Card className="p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">Live Preview</h2>
         <div>
           <div className="font-bold mb-2">{quizTitle || "Quiz Title"}</div>
+          {categories.length > 0 && (
+            <div className="mb-2 text-sm text-gray-600">
+              Categories:{" "}
+              {categories
+                .map(
+                  (cat) =>
+                    CATEGORY_OPTIONS.find((c) => c.value === cat)?.label ||
+                    cat,
+                )
+                .join(", ")}
+            </div>
+          )}
           {videoId && (
             <div className="mb-4">
               <div className="aspect-w-16 aspect-h-9">
@@ -276,12 +435,25 @@ const QuizCreator: React.FC = () => {
           <ol className="list-decimal pl-5 space-y-4">
             {questions.map((q, qIdx) => (
               <li key={qIdx}>
-                <div className="font-medium">{q.text || <span className="text-gray-400">[No question text]</span>}</div>
+                <div className="font-medium">
+                  {q.text || (
+                    <span className="text-gray-400">[No question text]</span>
+                  )}
+                </div>
                 <ul className="list-disc pl-5">
                   {q.options.map((opt, oIdx) => (
-                    <li key={oIdx} className={q.correct === oIdx ? "text-green-600 font-semibold" : ""}>
-                      {opt.text || <span className="text-gray-400">[No option text]</span>}
-                      {q.correct === oIdx && <span className="ml-2 text-xs">(Correct)</span>}
+                    <li
+                      key={oIdx}
+                      className={
+                        q.correct === oIdx ? "text-green-600 font-semibold" : ""
+                      }
+                    >
+                      {opt.text || (
+                        <span className="text-gray-400">[No option text]</span>
+                      )}
+                      {q.correct === oIdx && (
+                        <span className="ml-2 text-xs">(Correct)</span>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -289,6 +461,54 @@ const QuizCreator: React.FC = () => {
             ))}
           </ol>
         </div>
+      </Card>
+      {/* Quiz List */}
+      <Card className="p-6">
+        <h2 className="text-xl font-semibold mb-4">All Quizzes</h2>
+        {loadingQuizzes ? (
+          <div className="text-gray-500">Loading...</div>
+        ) : quizzes.length === 0 ? (
+          <div className="text-gray-500">No quizzes found.</div>
+        ) : (
+          <div className="space-y-4">
+            {quizzes.map((quiz) => (
+              <Card key={quiz.id} className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <div>
+                  <div className="font-semibold">{quiz.title}</div>
+                  <div className="text-sm text-gray-600">
+                    Categories:{" "}
+                    {quiz.categories
+                      .map(
+                        (cat) =>
+                          CATEGORY_OPTIONS.find((c) => c.value === cat)?.label ||
+                          cat,
+                      )
+                      .join(", ")}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Created: {new Date(quiz.created_at).toLocaleString()}
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-2 md:mt-0">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => handleEdit(quiz)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleDelete(quiz.id)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );
