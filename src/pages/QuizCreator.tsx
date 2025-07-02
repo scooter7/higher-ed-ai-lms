@@ -330,9 +330,9 @@ const QuizCreator: React.FC = () => {
               value={mediaType}
               onChange={e => setMediaType(e.target.value as any)}
             >
-              <option value="reading">Reading</option>
-              <option value="podcast">Podcast</option>
-              <option value="video">Video</option>
+              <option value="reading">Reading (Document or Webpage)</option>
+              <option value="podcast">Podcast (Audio or Podcast URL)</option>
+              <option value="video">Video (YouTube or Video URL)</option>
             </select>
           </div>
         </div>
@@ -350,7 +350,7 @@ const QuizCreator: React.FC = () => {
             <Input
               value={mediaUrl}
               onChange={e => setMediaUrl(e.target.value)}
-              placeholder="Paste media URL"
+              placeholder="Paste media URL (webpage, document, audio, or video)"
             />
           </div>
         </div>
