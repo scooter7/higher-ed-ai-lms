@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useUser } from "@/contexts/UserContext";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/lib/supabaseClient";
-import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
 const ADMIN_EMAIL = "james@shmooze.io";
@@ -16,6 +15,8 @@ type DomainStats = {
   domain: string;
   count: number;
 };
+
+const EDGE_FUNCTION_URL = "https://omviqylasysbpoiosapy.supabase.co/functions/v1/get-users";
 
 const Admin = () => {
   const { user } = useUser();
@@ -48,18 +49,20 @@ const Admin = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       setLoading(true);
-      // Try to get from profiles, fallback to auth.users
-      let { data: profiles, error } = await supabase
-        .from("profiles")
-        .select("id, email");
-      if (error || !profiles) {
-        // fallback to auth.users (service role required, so this may not work on client)
-        profiles = [];
+      // Call edge function to get users from auth.users
+      const { data, error } = await supabase.functions.invoke("get-users", {
+        headers: {
+          Authorization: `Bearer ${supabase.auth.session()?.access_token || ""}`,
+        },
+      });
+      let userList: UserProfile[] = [];
+      if (data && data.users) {
+        userList = data.users;
       }
-      setUsers(profiles || []);
+      setUsers(userList);
       // Compute domains
       const domainMap: Record<string, number> = {};
-      (profiles || []).forEach((u: UserProfile) => {
+      (userList || []).forEach((u: UserProfile) => {
         const domain = u.email.split("@")[1] || "unknown";
         domainMap[domain] = (domainMap[domain] || 0) + 1;
       });
