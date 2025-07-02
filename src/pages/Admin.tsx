@@ -16,8 +16,6 @@ type DomainStats = {
   count: number;
 };
 
-const EDGE_FUNCTION_URL = "https://omviqylasysbpoiosapy.supabase.co/functions/v1/get-users";
-
 const Admin = () => {
   const { user } = useUser();
   const [loading, setLoading] = useState(true);
@@ -49,7 +47,7 @@ const Admin = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       setLoading(true);
-      // Get the current session's access token
+      // Get the current session's access token (async!)
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token || "";
       // Call edge function to get users from auth.users
