@@ -10,6 +10,7 @@ import CourseDetail from "./pages/CourseDetail";
 import Admin from "./pages/Admin";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { AuthForm } from "@/components/AuthForm";
+import QuizCreator from "./pages/QuizCreator";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const AppRoutes = () => {
         <Route path="/courses" element={<Courses />} />
         <Route path="/courses/:courseId" element={<CourseDetail />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/quiz-creator" element={<QuizCreator />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

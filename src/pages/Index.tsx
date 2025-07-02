@@ -15,6 +15,14 @@ const Index = () => {
         >
           View Courses
         </Link>
+        <div className="mt-4">
+          <Link
+            to="/quiz-creator"
+            className="inline-block bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-medium shadow hover:bg-secondary/80 transition"
+          >
+            Quiz Creator
+          </Link>
+        </div>
       </div>
       <div className="mt-10">
         <MadeWithDyad />
