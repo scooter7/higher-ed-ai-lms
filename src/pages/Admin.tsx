@@ -49,10 +49,13 @@ const Admin = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       setLoading(true);
+      // Get the current session's access token
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token || "";
       // Call edge function to get users from auth.users
       const { data, error } = await supabase.functions.invoke("get-users", {
         headers: {
-          Authorization: `Bearer ${supabase.auth.session()?.access_token || ""}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       });
       let userList: UserProfile[] = [];
