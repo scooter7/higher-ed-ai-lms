@@ -5,6 +5,12 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
 
 const ADMIN_EMAIL = "james@shmooze.io";
 
@@ -46,6 +52,7 @@ type Media = {
   title: string;
   url: string;
   created_at: string;
+  order?: number;
 };
 
 function getYoutubeId(url: string) {
@@ -98,6 +105,7 @@ const CourseCreator: React.FC = () => {
     const { data, error } = await supabase
       .from("course_media")
       .select("*")
+      .order("order", { ascending: true })
       .order("created_at", { ascending: false });
     if (!error && data) {
       setMedia(data);
@@ -132,12 +140,15 @@ const CourseCreator: React.FC = () => {
       return;
     }
     setMediaLoading(true);
+    // Set order to the end
+    const maxOrder = media.length > 0 ? Math.max(...media.map((m) => m.order ?? 0)) : 0;
     const { error } = await supabase.from("course_media").insert([
       {
         course_id: mediaCourse,
         type: mediaType,
         title: mediaTitle,
         url: mediaUrl,
+        order: maxOrder + 1,
       },
     ]);
     if (!error) {
@@ -164,7 +175,31 @@ const CourseCreator: React.FC = () => {
     }
   };
 
-  // Quiz handlers
+  // Drag-and-drop handlers
+  const onDragEnd = async (result: DropResult) => {
+    if (!result.destination) return;
+    const reordered = Array.from(media);
+    const [removed] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, removed);
+
+    // Update order in local state
+    setMedia(
+      reordered.map((item, idx) => ({
+        ...item,
+        order: idx,
+      }))
+    );
+
+    // Persist new order to Supabase
+    setMediaLoading(true);
+    const updates = reordered.map((item, idx) =>
+      supabase.from("course_media").update({ order: idx }).eq("id", item.id)
+    );
+    await Promise.all(updates);
+    await fetchMedia();
+  };
+
+  // Quiz handlers (unchanged)
   const handleAddQuestion = () => {
     setQuestions([
       ...questions,
@@ -361,27 +396,49 @@ const CourseCreator: React.FC = () => {
           {mediaLoading ? (
             <div className="text-gray-500">Loading...</div>
           ) : (
-            <div className="space-y-2">
-              {media.length === 0 && (
-                <div className="text-gray-500">No media found.</div>
-              )}
-              {media.map((m) => (
-                <Card key={m.id} className="p-3 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">{m.title}</div>
-                    <div className="text-xs text-gray-500">
-                      {CATEGORY_OPTIONS.find((c) => c.value === m.course_id)?.label || m.course_id} &middot; {m.type}
-                    </div>
-                    <a href={m.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-xs">
-                      {m.url}
-                    </a>
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId="media-list">
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="space-y-2"
+                  >
+                    {media.length === 0 && (
+                      <div className="text-gray-500">No media found.</div>
+                    )}
+                    {media.map((m, idx) => (
+                      <Draggable key={m.id} draggableId={m.id} index={idx}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className={`mb-2 ${snapshot.isDragging ? "bg-gray-100" : ""}`}
+                          >
+                            <Card className="p-3 flex items-center justify-between">
+                              <div>
+                                <div className="font-medium">{m.title}</div>
+                                <div className="text-xs text-gray-500">
+                                  {CATEGORY_OPTIONS.find((c) => c.value === m.course_id)?.label || m.course_id} &middot; {m.type}
+                                </div>
+                                <a href={m.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-xs">
+                                  {m.url}
+                                </a>
+                              </div>
+                              <Button size="sm" variant="destructive" onClick={() => handleDeleteMedia(m.id)} disabled={mediaLoading}>
+                                Delete
+                              </Button>
+                            </Card>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
                   </div>
-                  <Button size="sm" variant="destructive" onClick={() => handleDeleteMedia(m.id)} disabled={mediaLoading}>
-                    Delete
-                  </Button>
-                </Card>
-              ))}
-            </div>
+                )}
+              </Droppable>
+            </DragDropContext>
           )}
         </div>
       </Card>
