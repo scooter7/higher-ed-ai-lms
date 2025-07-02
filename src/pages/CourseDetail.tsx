@@ -1,9 +1,12 @@
 import { useParams } from "react-router-dom";
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import { Quiz } from "@/components/Quiz";
 import { supabase } from "@/lib/supabaseClient";
 import { Card } from "@/components/ui/card";
-import { MarkCourseComplete } from "@/components/MarkCourseComplete";
+import { Button } from "@/components/ui/button";
+import { useUser } from "@/contexts/UserContext";
+import { useActivityProgress } from "@/hooks/useActivityProgress";
+import { toast } from "sonner";
 
 // Static course data
 const courseData: Record<string, {
@@ -99,11 +102,16 @@ const CourseDetail = () => {
   const [media, setMedia] = useState<Media[]>([]);
   const [mediaLoading, setMediaLoading] = useState(true);
 
+  const { user } = useUser();
+  const { completed, loading: progressLoading, markComplete } = useActivityProgress(courseId || "");
+
+  // For auto-marking course complete
+  const [courseCompleted, setCourseCompleted] = useState(false);
+
   useEffect(() => {
     const fetchQuizzes = async () => {
       if (!course) return;
       setLoading(true);
-      // Fetch quizzes where the course's category is included in the quiz's categories array
       const { data, error } = await supabase
         .from("quizzes")
         .select("*")
@@ -137,6 +145,51 @@ const CourseDetail = () => {
     fetchMedia();
   }, [courseId]);
 
+  // Check if all activities and quizzes are complete, then mark course as complete
+  useEffect(() => {
+    if (!user || !courseId) return;
+    if (mediaLoading || loading || progressLoading) return;
+
+    const allMediaIds = media.map((m) => `media:${m.id}`);
+    const allQuizIds = quizzes.map((q) => `quiz:${q.id}`);
+    const allIds = [...allMediaIds, ...allQuizIds];
+
+    const allComplete = allIds.length > 0 && allIds.every((id) => completed[id]);
+    if (allComplete && !courseCompleted) {
+      // Mark course as complete
+      supabase
+        .from("course_progress")
+        .upsert(
+          {
+            user_id: user.id,
+            course_id: courseId,
+            completed_at: new Date().toISOString(),
+          },
+          { onConflict: ["user_id", "course_id"] }
+        )
+        .then(({ error }) => {
+          if (!error) {
+            setCourseCompleted(true);
+            toast.success("Course marked as complete!");
+          }
+        });
+    }
+  }, [user, courseId, media, quizzes, completed, mediaLoading, loading, progressLoading, courseCompleted]);
+
+  // Check if course is already marked complete
+  useEffect(() => {
+    if (!user || !courseId) return;
+    supabase
+      .from("course_progress")
+      .select("completed_at")
+      .eq("user_id", user.id)
+      .eq("course_id", courseId)
+      .single()
+      .then(({ data }) => {
+        if (data && data.completed_at) setCourseCompleted(true);
+      });
+  }, [user, courseId]);
+
   if (!course) {
     return (
       <div className="max-w-xl mx-auto py-10 text-center">
@@ -166,8 +219,14 @@ const CourseDetail = () => {
         <h2 className="text-xl font-semibold mb-2">Transcript</h2>
         <p className="bg-gray-50 p-4 rounded border text-gray-700">{course.transcript}</p>
       </div>
-      {/* --- Mark as Complete Button --- */}
-      <MarkCourseComplete courseId={courseId!} />
+      {/* --- Course Completion Status --- */}
+      <div className="my-4 text-center">
+        {courseCompleted ? (
+          <span className="text-green-600 font-semibold">Course Completed!</span>
+        ) : (
+          <span className="text-gray-600">Complete all activities and quizzes to finish the course.</span>
+        )}
+      </div>
       {/* --- Media Section --- */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-2">Course Media</h2>
@@ -179,27 +238,39 @@ const CourseDetail = () => {
               <div>
                 <h3 className="font-semibold mb-1">Videos</h3>
                 <ul className="list-disc pl-5">
-                  {videos.map((m) => (
-                    <li key={m.id} className="mb-2">
-                      <div className="font-medium">{m.title}</div>
-                      <div>
-                        <a href={m.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                          {m.url}
-                        </a>
-                      </div>
-                      {/* If YouTube, show preview */}
-                      {m.url.includes("youtube.com") || m.url.includes("youtu.be") ? (
-                        <div className="aspect-w-16 aspect-h-9 mt-2">
-                          <iframe
-                            src={`https://www.youtube.com/embed/${getYoutubeId(m.url)}`}
-                            title={m.title}
-                            allowFullScreen
-                            className="w-full h-48 rounded border"
-                          />
+                  {videos.map((m) => {
+                    const key = `media:${m.id}`;
+                    return (
+                      <li key={m.id} className="mb-2 flex items-center gap-2">
+                        <div className="flex-1">
+                          <div className="font-medium">{m.title}</div>
+                          <div>
+                            <a href={m.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                              {m.url}
+                            </a>
+                          </div>
+                          {m.url.includes("youtube.com") || m.url.includes("youtu.be") ? (
+                            <div className="aspect-w-16 aspect-h-9 mt-2">
+                              <iframe
+                                src={`https://www.youtube.com/embed/${getYoutubeId(m.url)}`}
+                                title={m.title}
+                                allowFullScreen
+                                className="w-full h-48 rounded border"
+                              />
+                            </div>
+                          ) : null}
                         </div>
-                      ) : null}
-                    </li>
-                  ))}
+                        <Button
+                          size="sm"
+                          variant={completed[key] ? "success" : "outline"}
+                          disabled={completed[key]}
+                          onClick={() => markComplete(m.id, "media")}
+                        >
+                          {completed[key] ? "Completed" : "Mark Complete"}
+                        </Button>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
@@ -207,14 +278,27 @@ const CourseDetail = () => {
               <div>
                 <h3 className="font-semibold mb-1">Readings</h3>
                 <ul className="list-disc pl-5">
-                  {readings.map((m) => (
-                    <li key={m.id} className="mb-2">
-                      <div className="font-medium">{m.title}</div>
-                      <a href={m.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                        {m.url}
-                      </a>
-                    </li>
-                  ))}
+                  {readings.map((m) => {
+                    const key = `media:${m.id}`;
+                    return (
+                      <li key={m.id} className="mb-2 flex items-center gap-2">
+                        <div className="flex-1">
+                          <div className="font-medium">{m.title}</div>
+                          <a href={m.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                            {m.url}
+                          </a>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant={completed[key] ? "success" : "outline"}
+                          disabled={completed[key]}
+                          onClick={() => markComplete(m.id, "media")}
+                        >
+                          {completed[key] ? "Completed" : "Mark Complete"}
+                        </Button>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
@@ -222,18 +306,30 @@ const CourseDetail = () => {
               <div>
                 <h3 className="font-semibold mb-1">Podcasts</h3>
                 <ul className="list-disc pl-5">
-                  {podcasts.map((m) => (
-                    <li key={m.id} className="mb-2">
-                      <div className="font-medium">{m.title}</div>
-                      <a href={m.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                        {m.url}
-                      </a>
-                      {/* If it's a direct audio link, show audio player */}
-                      {m.url.match(/\.(mp3|wav|ogg)$/) ? (
-                        <audio controls src={m.url} className="mt-2 w-full" />
-                      ) : null}
-                    </li>
-                  ))}
+                  {podcasts.map((m) => {
+                    const key = `media:${m.id}`;
+                    return (
+                      <li key={m.id} className="mb-2 flex items-center gap-2">
+                        <div className="flex-1">
+                          <div className="font-medium">{m.title}</div>
+                          <a href={m.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                            {m.url}
+                          </a>
+                          {m.url.match(/\.(mp3|wav|ogg)$/) ? (
+                            <audio controls src={m.url} className="mt-2 w-full" />
+                          ) : null}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant={completed[key] ? "success" : "outline"}
+                          disabled={completed[key]}
+                          onClick={() => markComplete(m.id, "media")}
+                        >
+                          {completed[key] ? "Completed" : "Mark Complete"}
+                        </Button>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
@@ -251,29 +347,42 @@ const CourseDetail = () => {
         ) : quizzes.length === 0 ? (
           <p className="text-gray-500">No quizzes available for this category yet.</p>
         ) : (
-          quizzes.map((quiz) => (
-            <Card key={quiz.id} className="mb-6 p-4">
-              <div className="mb-2 font-bold text-lg">{quiz.title}</div>
-              {quiz.video_url && (
-                <div className="aspect-w-16 aspect-h-9 mb-4">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${getYoutubeId(quiz.video_url)}`}
-                    title={quiz.title}
-                    allowFullScreen
-                    className="w-full h-64 rounded border"
-                  />
+          quizzes.map((quiz) => {
+            const key = `quiz:${quiz.id}`;
+            return (
+              <Card key={quiz.id} className="mb-6 p-4">
+                <div className="mb-2 font-bold text-lg">{quiz.title}</div>
+                {quiz.video_url && (
+                  <div className="aspect-w-16 aspect-h-9 mb-4">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${getYoutubeId(quiz.video_url)}`}
+                      title={quiz.title}
+                      allowFullScreen
+                      className="w-full h-64 rounded border"
+                    />
+                  </div>
+                )}
+                <Quiz
+                  questions={quiz.questions.map((q) => ({
+                    question: q.text,
+                    options: q.options.map((opt) => opt.text),
+                    answer: q.correct ?? 0,
+                  }))}
+                  courseId={courseId}
+                />
+                <div className="mt-2 text-right">
+                  <Button
+                    size="sm"
+                    variant={completed[key] ? "success" : "outline"}
+                    disabled={completed[key]}
+                    onClick={() => markComplete(quiz.id, "quiz")}
+                  >
+                    {completed[key] ? "Completed" : "Mark Complete"}
+                  </Button>
                 </div>
-              )}
-              <Quiz
-                questions={quiz.questions.map((q) => ({
-                  question: q.text,
-                  options: q.options.map((opt) => opt.text),
-                  answer: q.correct ?? 0,
-                }))}
-                courseId={courseId}
-              />
-            </Card>
-          ))
+              </Card>
+            );
+          })
         )}
       </div>
       <div className="mt-8 text-center">
