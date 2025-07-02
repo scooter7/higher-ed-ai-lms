@@ -19,6 +19,7 @@ type DomainStats = {
 const Admin = () => {
   const { user } = useUser();
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Stats
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -47,6 +48,7 @@ const Admin = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       setLoading(true);
+      setErrorMsg(null);
       // Get the current session's access token (async!)
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token || "";
@@ -56,6 +58,20 @@ const Admin = () => {
           Authorization: `Bearer ${accessToken}`,
         },
       });
+      if (error) {
+        setErrorMsg(error.message || "Unknown error from edge function");
+        setUsers([]);
+        setDomains([]);
+        setLoading(false);
+        return;
+      }
+      if (data && data.error) {
+        setErrorMsg(data.error);
+        setUsers([]);
+        setDomains([]);
+        setLoading(false);
+        return;
+      }
       let userList: UserProfile[] = [];
       if (data && data.users) {
         userList = data.users;
@@ -120,6 +136,11 @@ const Admin = () => {
       <h1 className="text-3xl font-bold mb-6 text-center">Admin Analytics</h1>
       <Card className="mb-8 p-6">
         <h2 className="text-xl font-semibold mb-4">User Stats</h2>
+        {errorMsg && (
+          <div className="text-red-600 mb-4 text-center">
+            Error: {errorMsg}
+          </div>
+        )}
         {loading ? (
           <div className="text-gray-500">Loading users...</div>
         ) : (
