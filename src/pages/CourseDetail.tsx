@@ -1,260 +1,102 @@
 import { useParams } from "react-router-dom";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { Quiz } from "@/components/Quiz";
+import { supabase } from "@/lib/supabaseClient";
+import { Card } from "@/components/ui/card";
 
-const courseData: Record<string, { title: string; videoId: string; transcript: string }> = {
+const courseData: Record<string, { title: string; videoId: string; transcript: string; category: string }> = {
   "digital-marketing": {
     title: "Digital Marketing",
     videoId: "dQw4w9WgXcQ",
     transcript: "This is a sample transcript for Digital Marketing. AI can help automate campaigns, analyze data, and personalize student outreach.",
+    category: "digital-marketing",
   },
   "brand-strategy": {
     title: "Brand Strategy",
     videoId: "dQw4w9WgXcQ",
     transcript: "This is a sample transcript for Brand Strategy. AI can help identify brand sentiment and optimize messaging.",
+    category: "brand-strategy",
   },
   "market-research": {
     title: "Market Research",
     videoId: "dQw4w9WgXcQ",
     transcript: "This is a sample transcript for Market Research. Use AI to analyze trends and student preferences.",
+    category: "market-research",
   },
   "web-development": {
     title: "Web Development",
     videoId: "dQw4w9WgXcQ",
     transcript: "This is a sample transcript for Web Development. AI can help with accessibility and content optimization.",
+    category: "web-development",
   },
   "social-media": {
     title: "Social Media",
     videoId: "dQw4w9WgXcQ",
     transcript: "This is a sample transcript for Social Media. AI can schedule posts and analyze engagement.",
+    category: "social-media",
   },
   "graphic-design": {
     title: "Graphic Design",
     videoId: "dQw4w9WgXcQ",
     transcript: "This is a sample transcript for Graphic Design. AI tools can generate creative assets quickly.",
+    category: "graphic-design",
   },
   "copywriting": {
     title: "Copywriting",
     videoId: "dQw4w9WgXcQ",
     transcript: "This is a sample transcript for Copywriting. Use AI to brainstorm and refine your messaging.",
+    category: "copywriting",
   },
   "email-marketing": {
     title: "Email Marketing",
     videoId: "dQw4w9WgXcQ",
     transcript: "This is a sample transcript for Email Marketing. AI can personalize content and optimize send times.",
+    category: "email-marketing",
   },
   "text-message-marketing": {
     title: "Text Message Marketing",
     videoId: "dQw4w9WgXcQ",
     transcript: "This is a sample transcript for Text Message Marketing. AI can segment audiences and automate responses.",
+    category: "text-message-marketing",
   },
 };
 
-const quizQuestions: Record<string, { question: string; options: string[]; answer: number }[]> = {
-  "digital-marketing": [
-    {
-      question: "How can AI help in digital marketing for higher education?",
-      options: [
-        "Automate campaigns",
-        "Analyze data",
-        "Personalize outreach",
-        "All of the above",
-      ],
-      answer: 3,
-    },
-    {
-      question: "What is one benefit of using AI in student outreach?",
-      options: [
-        "Personalization at scale",
-        "Manual data entry",
-        "Ignoring analytics",
-        "Reducing automation",
-      ],
-      answer: 0,
-    },
-  ],
-  "brand-strategy": [
-    {
-      question: "How can AI assist with brand strategy?",
-      options: [
-        "Identify brand sentiment",
-        "Optimize messaging",
-        "Both of the above",
-        "None of the above",
-      ],
-      answer: 2,
-    },
-    {
-      question: "What is a key use of AI in branding?",
-      options: [
-        "Random guessing",
-        "Sentiment analysis",
-        "Ignoring feedback",
-        "Manual surveys",
-      ],
-      answer: 1,
-    },
-  ],
-  "market-research": [
-    {
-      question: "What can AI analyze for market research?",
-      options: [
-        "Trends",
-        "Student preferences",
-        "Both",
-        "Neither",
-      ],
-      answer: 2,
-    },
-    {
-      question: "How does AI help in understanding student preferences?",
-      options: [
-        "By analyzing large datasets",
-        "By ignoring data",
-        "By guessing",
-        "By manual surveys only",
-      ],
-      answer: 0,
-    },
-  ],
-  "web-development": [
-    {
-      question: "How can AI help in web development for higher ed?",
-      options: [
-        "Improve accessibility",
-        "Content optimization",
-        "Both",
-        "Neither",
-      ],
-      answer: 2,
-    },
-    {
-      question: "Which is a benefit of using AI in web development?",
-      options: [
-        "Automated content suggestions",
-        "Slower website performance",
-        "Less accessibility",
-        "Manual coding only",
-      ],
-      answer: 0,
-    },
-  ],
-  "social-media": [
-    {
-      question: "What can AI do for social media marketing?",
-      options: [
-        "Schedule posts",
-        "Analyze engagement",
-        "Both",
-        "None",
-      ],
-      answer: 2,
-    },
-    {
-      question: "How does AI improve social media strategy?",
-      options: [
-        "By providing analytics",
-        "By ignoring trends",
-        "By posting randomly",
-        "By reducing engagement",
-      ],
-      answer: 0,
-    },
-  ],
-  "graphic-design": [
-    {
-      question: "How does AI help in graphic design?",
-      options: [
-        "Generate creative assets quickly",
-        "Slow down design",
-        "Remove creativity",
-        "None of the above",
-      ],
-      answer: 0,
-    },
-    {
-      question: "Which is a feature of AI graphic design tools?",
-      options: [
-        "Template generation",
-        "Manual sketching only",
-        "No automation",
-        "Slower output",
-      ],
-      answer: 0,
-    },
-  ],
-  "copywriting": [
-    {
-      question: "What is a benefit of AI in copywriting?",
-      options: [
-        "Brainstorming ideas",
-        "Refining messaging",
-        "Both",
-        "None",
-      ],
-      answer: 2,
-    },
-    {
-      question: "How can AI assist marketers in copywriting?",
-      options: [
-        "By suggesting headlines",
-        "By ignoring grammar",
-        "By making typos",
-        "By removing creativity",
-      ],
-      answer: 0,
-    },
-  ],
-  "email-marketing": [
-    {
-      question: "How can AI improve email marketing?",
-      options: [
-        "Personalize content",
-        "Optimize send times",
-        "Both",
-        "Neither",
-      ],
-      answer: 2,
-    },
-    {
-      question: "What is a key advantage of AI in email marketing?",
-      options: [
-        "Better targeting",
-        "More spam",
-        "Less personalization",
-        "Manual sending only",
-      ],
-      answer: 0,
-    },
-  ],
-  "text-message-marketing": [
-    {
-      question: "What can AI do for SMS marketing?",
-      options: [
-        "Segment audiences",
-        "Automate responses",
-        "Both",
-        "None",
-      ],
-      answer: 2,
-    },
-    {
-      question: "How does AI help with text message marketing?",
-      options: [
-        "By automating replies",
-        "By ignoring messages",
-        "By sending random texts",
-        "By reducing engagement",
-      ],
-      answer: 0,
-    },
-  ],
+type QuizType = {
+  id: string;
+  title: string;
+  video_url: string;
+  categories: string[];
+  questions: {
+    text: string;
+    options: { text: string }[];
+    correct: number | null;
+  }[];
 };
 
 const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const course = useMemo(() => courseId && courseData[courseId], [courseId]);
-  const questions = quizQuestions[courseId || ""] || [];
+  const [quizzes, setQuizzes] = useState<QuizType[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      if (!course) return;
+      setLoading(true);
+      // Fetch quizzes where the course's category is included in the quiz's categories array
+      const { data, error } = await supabase
+        .from("quizzes")
+        .select("*")
+        .contains("categories", [course.category]);
+      if (!error && data) {
+        setQuizzes(data);
+      } else {
+        setQuizzes([]);
+      }
+      setLoading(false);
+    };
+    fetchQuizzes();
+  }, [course]);
 
   if (!course) {
     return (
@@ -281,11 +123,34 @@ const CourseDetail = () => {
         <p className="bg-gray-50 p-4 rounded border text-gray-700">{course.transcript}</p>
       </div>
       <div>
-        <h2 className="text-xl font-semibold mb-2">Quiz</h2>
-        {questions.length === 0 ? (
-          <p className="text-gray-500">Quiz coming soon!</p>
+        <h2 className="text-xl font-semibold mb-2">Quizzes</h2>
+        {loading ? (
+          <div className="text-gray-500">Loading quizzes...</div>
+        ) : quizzes.length === 0 ? (
+          <p className="text-gray-500">No quizzes available for this category yet.</p>
         ) : (
-          <Quiz questions={questions} />
+          quizzes.map((quiz) => (
+            <Card key={quiz.id} className="mb-6 p-4">
+              <div className="mb-2 font-bold text-lg">{quiz.title}</div>
+              {quiz.video_url && (
+                <div className="aspect-w-16 aspect-h-9 mb-4">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${getYoutubeId(quiz.video_url)}`}
+                    title={quiz.title}
+                    allowFullScreen
+                    className="w-full h-64 rounded border"
+                  />
+                </div>
+              )}
+              <Quiz
+                questions={quiz.questions.map((q) => ({
+                  question: q.text,
+                  options: q.options.map((opt) => opt.text),
+                  answer: q.correct ?? 0,
+                }))}
+              />
+            </Card>
+          ))
         )}
       </div>
       <div className="mt-8 text-center">
@@ -294,5 +159,13 @@ const CourseDetail = () => {
     </div>
   );
 };
+
+// Helper to extract YouTube ID from URL
+function getYoutubeId(url: string) {
+  const match = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^?&]+)/
+  );
+  return match ? match[1] : "";
+}
 
 export default CourseDetail;
