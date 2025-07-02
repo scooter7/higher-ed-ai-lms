@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Logo from "@/components/Logo";
 
 type AuthMode = "login" | "signup";
 
@@ -33,6 +34,9 @@ export const AuthForm: React.FC = () => {
 
   return (
     <div className="max-w-sm mx-auto bg-white rounded-lg shadow p-6 mt-10">
+      <div className="flex justify-center mb-6">
+        <Logo />
+      </div>
       <h2 className="text-2xl font-bold mb-4 text-center">
         {mode === "login" ? "Login" : "Sign Up"}
       </h2>
