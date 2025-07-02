@@ -1,10 +1,9 @@
 import React from "react";
-import logo from "@/assets/michaelailogo.png";
 
 const Logo = () => (
   <div className="flex flex-col items-center py-4">
     <img
-      src={logo}
+      src="/michaelailogo.png"
       alt="MICHAEL AI by Carnegie"
       className="w-48 h-auto"
       style={{ maxWidth: 220 }}
