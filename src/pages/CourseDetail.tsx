@@ -3,84 +3,9 @@ import { useMemo, useEffect, useState } from "react";
 import { Quiz } from "@/components/Quiz";
 import { supabase } from "@/lib/supabaseClient";
 import { Card } from "@/components/ui/card";
+import { MarkCourseComplete } from "@/components/MarkCourseComplete"; // <-- Add this import
 
-const courseData: Record<string, { title: string; videoId: string; transcript: string; category: string }> = {
-  "digital-marketing": {
-    title: "Digital Marketing",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is a sample transcript for Digital Marketing. AI can help automate campaigns, analyze data, and personalize student outreach.",
-    category: "digital-marketing",
-  },
-  "brand-strategy": {
-    title: "Brand Strategy",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is a sample transcript for Brand Strategy. AI can help identify brand sentiment and optimize messaging.",
-    category: "brand-strategy",
-  },
-  "market-research": {
-    title: "Market Research",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is a sample transcript for Market Research. Use AI to analyze trends and student preferences.",
-    category: "market-research",
-  },
-  "web-development": {
-    title: "Web Development",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is a sample transcript for Web Development. AI can help with accessibility and content optimization.",
-    category: "web-development",
-  },
-  "social-media": {
-    title: "Social Media",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is a sample transcript for Social Media. AI can schedule posts and analyze engagement.",
-    category: "social-media",
-  },
-  "graphic-design": {
-    title: "Graphic Design",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is a sample transcript for Graphic Design. AI tools can generate creative assets quickly.",
-    category: "graphic-design",
-  },
-  "copywriting": {
-    title: "Copywriting",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is a sample transcript for Copywriting. Use AI to brainstorm and refine your messaging.",
-    category: "copywriting",
-  },
-  "email-marketing": {
-    title: "Email Marketing",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is a sample transcript for Email Marketing. AI can personalize content and optimize send times.",
-    category: "email-marketing",
-  },
-  "text-message-marketing": {
-    title: "Text Message Marketing",
-    videoId: "dQw4w9WgXcQ",
-    transcript: "This is a sample transcript for Text Message Marketing. AI can segment audiences and automate responses.",
-    category: "text-message-marketing",
-  },
-};
-
-type QuizType = {
-  id: string;
-  title: string;
-  video_url: string;
-  categories: string[];
-  questions: {
-    text: string;
-    options: { text: string }[];
-    correct: number | null;
-  }[];
-};
-
-type Media = {
-  id: string;
-  course_id: string;
-  type: "video" | "reading" | "podcast";
-  title: string;
-  url: string;
-  created_at: string;
-};
+// ... rest of the file remains unchanged
 
 const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -159,6 +84,8 @@ const CourseDetail = () => {
         <h2 className="text-xl font-semibold mb-2">Transcript</h2>
         <p className="bg-gray-50 p-4 rounded border text-gray-700">{course.transcript}</p>
       </div>
+      {/* --- Mark as Complete Button --- */}
+      <MarkCourseComplete courseId={courseId!} />
       {/* --- Media Section --- */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-2">Course Media</h2>
@@ -272,7 +199,7 @@ const CourseDetail = () => {
       </div>
     </div>
   );
-};
+}
 
 // Helper to extract YouTube ID from URL
 function getYoutubeId(url: string) {
