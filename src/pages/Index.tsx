@@ -15,12 +15,18 @@ const Index = () => {
         >
           View Courses
         </Link>
-        <div className="mt-4">
+        <div className="mt-4 flex flex-col gap-2 items-center">
           <Link
             to="/quiz-creator"
             className="inline-block bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-medium shadow hover:bg-secondary/80 transition"
           >
             Quiz Creator
+          </Link>
+          <Link
+            to="/my-quizzes"
+            className="inline-block bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-medium shadow hover:bg-secondary/80 transition"
+          >
+            My Quizzes
           </Link>
         </div>
       </div>
