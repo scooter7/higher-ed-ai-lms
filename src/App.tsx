@@ -12,6 +12,7 @@ import { UserProvider, useUser } from "@/contexts/UserContext";
 import { AuthForm } from "@/components/AuthForm";
 import CourseCreator from "./pages/CourseCreator";
 import MyQuizzes from "./pages/MyQuizzes";
+import Sidebar from "@/components/Sidebar";
 
 const queryClient = new QueryClient();
 
@@ -27,27 +28,30 @@ const AppRoutes = () => {
   }
 
   return (
-    <>
-      {/* Dev: Link to admin page */}
-      <div className="fixed top-2 right-2 z-50">
-        <Link
-          to="/admin"
-          className="bg-secondary px-3 py-1 rounded text-sm font-medium shadow hover:bg-secondary/80"
-        >
-          Admin
-        </Link>
-      </div>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/courses" element={<Courses />} />
-        <Route path="/courses/:courseId" element={<CourseDetail />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/course-creator" element={<CourseCreator />} />
-        <Route path="/my-quizzes" element={<MyQuizzes />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </>
+    <div className="flex min-h-screen bg-background">
+      <Sidebar />
+      <main className="flex-1 p-6">
+        {/* Dev: Link to admin page */}
+        <div className="fixed top-2 right-2 z-50">
+          <Link
+            to="/admin"
+            className="bg-primary px-3 py-1 rounded text-sm font-medium shadow hover:bg-primary/80 text-white"
+          >
+            Admin
+          </Link>
+        </div>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/courses" element={<Courses />} />
+          <Route path="/courses/:courseId" element={<CourseDetail />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/course-creator" element={<CourseCreator />} />
+          <Route path="/my-quizzes" element={<MyQuizzes />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
+    </div>
   );
 };
 
