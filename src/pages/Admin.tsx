@@ -58,6 +58,21 @@ const Admin = () => {
           Authorization: `Bearer ${accessToken}`,
         },
       });
+
+      let parsed: any = data;
+      // If data is a string, try to parse it
+      if (typeof data === "string") {
+        try {
+          parsed = JSON.parse(data);
+        } catch (e) {
+          setErrorMsg("Failed to parse user data from edge function.");
+          setUsers([]);
+          setDomains([]);
+          setLoading(false);
+          return;
+        }
+      }
+
       if (error) {
         setErrorMsg(error.message || "Unknown error from edge function");
         setUsers([]);
@@ -65,16 +80,16 @@ const Admin = () => {
         setLoading(false);
         return;
       }
-      if (data && data.error) {
-        setErrorMsg(data.error);
+      if (parsed && parsed.error) {
+        setErrorMsg(parsed.error);
         setUsers([]);
         setDomains([]);
         setLoading(false);
         return;
       }
       let userList: UserProfile[] = [];
-      if (data && data.users) {
-        userList = data.users;
+      if (parsed && parsed.users) {
+        userList = parsed.users;
       }
       setUsers(userList);
       // Compute domains
